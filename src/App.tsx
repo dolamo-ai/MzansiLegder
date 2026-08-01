@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AppShell } from '@/components/layout/AppShell';
 import { DashboardPage } from '@/pages/DashboardPage';
@@ -11,6 +11,9 @@ import { InvoicesPage } from '@/pages/InvoicesPage';
 import { GoalsPage } from '@/pages/GoalsPage';
 import { AlertsPage } from '@/pages/AlertsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { LedgerWorkflowPage } from '@/pages/LedgerWorkflowPage';
+import { AuthPage } from '@/pages/AuthPage';
+import { useAuth } from '@/lib/auth';
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -31,10 +34,11 @@ function AnimatedRoutes() {
           <Route path="/analytics" element={<AnalyticsPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/upload" element={<UploadPage />} />
+          <Route path="/ledger" element={<LedgerWorkflowPage />} />
           <Route path="/goals" element={<GoalsPage />} />
           <Route path="/alerts" element={<AlertsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
-          <Route path="*" element={<DashboardPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </motion.div>
     </AnimatePresence>
@@ -42,6 +46,23 @@ function AnimatedRoutes() {
 }
 
 function App() {
+  const { session, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-bg">
+        <div className="flex flex-col items-center gap-3">
+          <img src="/image.png" alt="Mzansi Ledger" className="h-12 w-12 animate-pulse rounded-xl" />
+          <p className="text-sm text-muted">Loading Mzansi Ledger…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <AuthPage />;
+  }
+
   return (
     <BrowserRouter>
       <AppShell>

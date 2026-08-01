@@ -4,8 +4,8 @@ export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
 }
 
-export function formatCurrency(value: number, currency = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+export function formatCurrency(value: number, currency = 'ZAR'): string {
+  return new Intl.NumberFormat('en-ZA', {
     style: 'currency',
     currency,
     maximumFractionDigits: 0,

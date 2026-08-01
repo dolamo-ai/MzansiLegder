@@ -7,7 +7,10 @@ export type TxCategory =
   | 'Utilities'
   | 'Payroll'
   | 'Legal'
-  | 'Hardware';
+  | 'Hardware'
+  | 'Rent'
+  | 'Office Supplies'
+  | 'Other';
 
 export interface Transaction {
   id: string;
@@ -19,27 +22,9 @@ export interface Transaction {
   status: TxStatus;
   source: 'receipt' | 'invoice' | 'csv' | 'manual';
   confidence: number;
-  duplicateOf?: string;
+  duplicate_of?: string | null;
+  notes?: string | null;
 }
-
-export const transactions: Transaction[] = [
-  { id: 'TX-10421', vendor: 'Figma, Inc.', date: '2026-07-29', amount: 2400, vat: 480, category: 'Software', status: 'reviewed', source: 'invoice', confidence: 0.98 },
-  { id: 'TX-10422', vendor: 'WeWork', date: '2026-07-28', amount: 3200, vat: 640, category: 'Office', status: 'reviewed', source: 'invoice', confidence: 0.95 },
-  { id: 'TX-10423', vendor: 'Google Ads', date: '2026-07-27', amount: 1850, vat: 370, category: 'Marketing', status: 'pending', source: 'csv', confidence: 0.82 },
-  { id: 'TX-10424', vendor: 'United Airlines', date: '2026-07-26', amount: 1240, vat: 248, category: 'Travel', status: 'flagged', source: 'receipt', confidence: 0.71 },
-  { id: 'TX-10425', vendor: 'AWS', date: '2026-07-25', amount: 4120, vat: 824, category: 'Software', status: 'reviewed', source: 'invoice', confidence: 0.99 },
-  { id: 'TX-10426', vendor: 'Staples', date: '2026-07-24', amount: 320, vat: 64, category: 'Office', status: 'pending', source: 'receipt', confidence: 0.88 },
-  { id: 'TX-10427', vendor: 'Google Ads', date: '2026-07-24', amount: 1850, vat: 370, category: 'Marketing', status: 'duplicate', source: 'csv', confidence: 0.9, duplicateOf: 'TX-10423' },
-  { id: 'TX-10428', vendor: 'Pacific Gas & Electric', date: '2026-07-23', amount: 640, vat: 128, category: 'Utilities', status: 'reviewed', source: 'invoice', confidence: 0.96 },
-  { id: 'TX-10429', vendor: 'Gusto', date: '2026-07-22', amount: 12800, vat: 0, category: 'Payroll', status: 'reviewed', source: 'invoice', confidence: 0.99 },
-  { id: 'TX-10430', vendor: 'Cooley LLP', date: '2026-07-21', amount: 4500, vat: 900, category: 'Legal', status: 'pending', source: 'invoice', confidence: 0.84 },
-  { id: 'TX-10431', vendor: 'Dell Technologies', date: '2026-07-20', amount: 3200, vat: 640, category: 'Hardware', status: 'reviewed', source: 'invoice', confidence: 0.97 },
-  { id: 'TX-10432', vendor: 'Slack', date: '2026-07-19', amount: 720, vat: 144, category: 'Software', status: 'reviewed', source: 'invoice', confidence: 0.98 },
-  { id: 'TX-10433', vendor: 'Lyft Business', date: '2026-07-18', amount: 210, vat: 42, category: 'Travel', status: 'flagged', source: 'receipt', confidence: 0.66 },
-  { id: 'TX-10434', vendor: 'Notion Labs', date: '2026-07-17', amount: 960, vat: 192, category: 'Software', status: 'reviewed', source: 'invoice', confidence: 0.97 },
-  { id: 'TX-10435', vendor: 'HubSpot', date: '2026-07-16', amount: 3600, vat: 720, category: 'Marketing', status: 'pending', source: 'invoice', confidence: 0.89 },
-  { id: 'TX-10436', vendor: 'Verizon Business', date: '2026-07-15', amount: 410, vat: 82, category: 'Utilities', status: 'reviewed', source: 'invoice', confidence: 0.95 },
-];
 
 export const kpis = {
   totalExpenses: 184320,
@@ -96,7 +81,7 @@ export const aiInsights: AIInsight[] = [
     id: 'INS-1',
     type: 'duplicate',
     title: 'Duplicate Google Ads charge detected',
-    detail: 'TX-10423 and TX-10427 are identical $1,850 charges 3 days apart. One appears to be a duplicate billing.',
+    detail: 'TX-10423 and TX-10427 are identical R1,850 charges 3 days apart. One appears to be a duplicate billing.',
     amount: 1850,
     severity: 'high',
   },
@@ -104,7 +89,7 @@ export const aiInsights: AIInsight[] = [
     id: 'INS-2',
     type: 'savings',
     title: 'Switch to annual Figma billing',
-    detail: 'You pay $2,400/mo on monthly billing. Annual would save ~20% — about $576/yr.',
+    detail: 'You pay R2,400/mo on monthly billing. Annual would save ~20% — about R5,760/yr.',
     amount: 576,
     severity: 'medium',
   },
@@ -137,7 +122,7 @@ export const aiScore = 87;
 export const suggestedPrompts = [
   'Where am I overspending this month?',
   'Find all duplicate transactions',
-  'Summarize my VAT exposure for Q3',
+  'Summarise my VAT exposure for Q3',
   'Which subscriptions can I cancel?',
 ];
 
@@ -153,7 +138,7 @@ export const initialChat: ChatMessage[] = [
     id: 'm1',
     role: 'assistant',
     content:
-      "Hi! I'm your CostPilot AI copilot. I've analyzed your latest 16 transactions and found 1 duplicate, 2 savings opportunities, and 1 budget risk. What would you like to look at first?",
+      "Hi! I'm your Mzansi Ledger AI copilot. I can analyse your transactions, find duplicates, spot savings, and answer financial questions. What would you like to look at?",
     createdAt: new Date(Date.now() - 60000).toISOString(),
   },
 ];
@@ -182,7 +167,7 @@ export interface Alert {
 }
 
 export const alerts: Alert[] = [
-  { id: 'A1', title: 'Duplicate charge flagged', detail: 'Google Ads TX-10427 duplicates TX-10423 ($1,850).', level: 'danger', createdAt: new Date(Date.now() - 3600_000).toISOString() },
+  { id: 'A1', title: 'Duplicate charge flagged', detail: 'Google Ads TX-10427 duplicates TX-10423 (R1,850).', level: 'danger', createdAt: new Date(Date.now() - 3600_000).toISOString() },
   { id: 'A2', title: 'Budget exceeded', detail: 'Marketing category is at 108% of monthly budget.', level: 'warning', createdAt: new Date(Date.now() - 7200_000).toISOString() },
   { id: 'A3', title: 'Receipt uploaded', detail: 'United Airlines receipt processed and ready for review.', level: 'info', createdAt: new Date(Date.now() - 86400_000).toISOString() },
 ];

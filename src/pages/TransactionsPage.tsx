@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Search, SlidersHorizontal, Download, ChevronLeft, ChevronRight, Check, X, Sparkles, AlertTriangle, Plus } from 'lucide-react';
+import { Search, SlidersHorizontal, Download, ChevronLeft, ChevronRight, Check, X, Sparkles, AlertTriangle, Plus, Edit3, Trash2, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -15,13 +15,14 @@ const categories: TxCategory[] = ['Software', 'Marketing', 'Office', 'Travel', '
 const statuses: TxStatus[] = ['reviewed', 'pending', 'flagged', 'duplicate'];
 
 export function TransactionsPage() {
-  const { rows, loading, insert, update } = useTransactions();
+  const { rows, loading, insert, update, remove } = useTransactions();
   const [query, setQuery] = useState('');
   const [cat, setCat] = useState<TxCategory | 'all'>('all');
   const [status, setStatus] = useState<TxStatus | 'all'>('all');
   const [page, setPage] = useState(1);
   const [review, setReview] = useState<Transaction | null>(null);
   const [newOpen, setNewOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const perPage = 8;
 
   const filtered = useMemo(() => {
@@ -129,7 +130,11 @@ export function TransactionsPage() {
                       <p className="text-xs text-muted">VAT {formatCurrency(tx.vat)}</p>
                     </td>
                     <td className="px-5 py-3.5 text-right">
-                      <Button size="sm" variant="ghost" onClick={() => setReview(tx)}>Review</Button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button size="sm" variant="ghost" onClick={() => setReview(tx)}>Review</Button>
+                        <button onClick={() => setReview(tx)} className="rounded-lg p-2 text-text-2 transition hover:bg-white/5 hover:text-accent" aria-label="Edit"><Edit3 size={15} /></button>
+                        <button onClick={() => setDeleteId(tx.id)} className="rounded-lg p-2 text-text-2 transition hover:bg-white/5 hover:text-danger" aria-label="Delete"><Trash2 size={15} /></button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -160,6 +165,14 @@ export function TransactionsPage() {
 
       <ReviewModal tx={review} onClose={() => setReview(null)} onSave={updateRow} />
       <NewTransactionModal open={newOpen} onClose={() => setNewOpen(false)} onSave={async (tx) => { await insert(tx); }} />
+      <DeleteConfirmModal
+        open={!!deleteId}
+        title="Delete transaction"
+        message="This will permanently remove the transaction from your ledger. This cannot be undone."
+        loading={false}
+        onConfirm={async () => { if (deleteId) { await remove(deleteId); } setDeleteId(null); }}
+        onClose={() => setDeleteId(null)}
+      />
     </div>
   );
 }
@@ -255,7 +268,7 @@ function ReviewModal({ tx, onClose, onSave }: { tx: Transaction | null; onClose:
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <ReviewField label="Vendor" value={vendor} onChange={setVendor} highlight={lowConfidence} />
-          <ReviewField label="Amount ($)" value={amount} onChange={setAmount} highlight={lowConfidence} type="number" />
+          <ReviewField label="Amount (R)" value={amount} onChange={setAmount} highlight={lowConfidence} type="number" />
           <div>
             <label className="mb-2 block text-xs font-medium text-text-2">Category</label>
             <select
@@ -268,7 +281,7 @@ function ReviewModal({ tx, onClose, onSave }: { tx: Transaction | null; onClose:
               ))}
             </select>
           </div>
-          <ReviewField label="VAT ($)" value={vat} onChange={setVat} type="number" />
+          <ReviewField label="VAT (R)" value={vat} onChange={setVat} type="number" />
         </div>
 
         <div className="rounded-xl border border-white/8 bg-white/3 p-4">
@@ -297,5 +310,23 @@ function ReviewField({ label, value, onChange, type = 'text', highlight = false 
         className={cn('input-base h-12 w-full px-4 text-sm', highlight && 'ring-1 ring-warning/40')}
       />
     </div>
+  );
+}
+
+export function DeleteConfirmModal({ open, title, message, loading, onConfirm, onClose }: { open: boolean; title: string; message: string; loading: boolean; onConfirm: () => void; onClose: () => void }) {
+  return (
+    <Modal open={open} onClose={onClose} title={title} subtitle={message}
+      footer={
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="ghost" size="md" onClick={onClose} disabled={loading}>Cancel</Button>
+          <Button variant="danger" size="md" onClick={onConfirm} disabled={loading} leftIcon={loading ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}>{loading ? 'Deleting…' : 'Delete'}</Button>
+        </div>
+      }
+    >
+      <div className="flex items-start gap-3 rounded-xl border border-danger/30 bg-danger/10 p-3.5">
+        <AlertTriangle size={18} className="mt-0.5 shrink-0 text-[#fca5a5]" />
+        <p className="text-sm text-text-2">{message}</p>
+      </div>
+    </Modal>
   );
 }

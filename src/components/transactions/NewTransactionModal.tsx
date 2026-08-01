@@ -80,8 +80,8 @@ export function NewTransactionModal({ open, onClose, onSave }: NewTransactionMod
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input label="Vendor" value={vendor} onChange={(e) => setVendor(e.target.value)} placeholder="e.g. Figma, Inc." />
           <Input label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          <Input label="Amount ($)" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
-          <Input label="VAT ($)" type="number" value={vat} onChange={(e) => setVat(e.target.value)} placeholder="0.00" />
+          <Input label="Amount (R)" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
+          <Input label="VAT (R)" type="number" value={vat} onChange={(e) => setVat(e.target.value)} placeholder="0.00" />
           <div>
             <label className="mb-2 block text-xs font-medium text-text-2">Category</label>
             <select value={category} onChange={(e) => setCategory(e.target.value as TxCategory)} className="input-base h-12 w-full cursor-pointer appearance-none px-4 text-sm capitalize">

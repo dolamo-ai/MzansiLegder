@@ -2,6 +2,7 @@ import { Search, Bell, Moon, Sun, Sparkles, Menu, Command } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/lib/theme';
+import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
 interface TopNavProps {
@@ -10,6 +11,7 @@ interface TopNavProps {
 
 export function TopNav({ onMenuClick }: TopNavProps) {
   const { theme, toggle } = useTheme();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [notifOpen, setNotifOpen] = useState(false);
 
@@ -100,7 +102,7 @@ export function TopNav({ onMenuClick }: TopNavProps) {
 
         {/* Avatar */}
         <div className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-purple to-primary text-sm font-bold text-white ring-2 ring-white/10">
-          AM
+          {(user?.email ?? 'U').slice(0, 1).toUpperCase()}
         </div>
       </div>
     </header>

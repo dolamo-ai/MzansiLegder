@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { FileText, Download, Plus, Search } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { FileText, Download, Plus, Search, Edit3, Trash2, Loader2, AlertTriangle } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -11,11 +11,12 @@ import { exportCSV, exportExcel } from '@/lib/export';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
 export function InvoicesPage() {
-  const { rows, loading, insert } = useInvoices();
+  const { rows, loading, insert, update, remove } = useInvoices();
   const [q, setQ] = useState('');
   const [newOpen, setNewOpen] = useState(false);
+  const [editInv, setEditInv] = useState<Invoice | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const filtered = rows.filter((i) => i.vendor.toLowerCase().includes(q.toLowerCase()) || i.id.toLowerCase().includes(q.toLowerCase()));
-
   const totalValue = rows.reduce((a, b) => a + Number(b.amount), 0);
 
   return (
@@ -84,7 +85,11 @@ export function InvoicesPage() {
                     <td className="px-5 py-3.5"><StatusBadge status={inv.status} /></td>
                     <td className="px-5 py-3.5 text-right text-sm font-semibold text-white">{formatCurrency(inv.amount)}</td>
                     <td className="px-5 py-3.5 text-right">
-                      <Button size="sm" variant="ghost" leftIcon={<Download size={14} />} onClick={() => exportCSV([{ id: inv.id, vendor: inv.vendor, date: inv.date, amount: inv.amount, status: inv.status, due: inv.due }], `${inv.id}.csv`)}>PDF</Button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button size="sm" variant="ghost" leftIcon={<Download size={14} />} onClick={() => exportCSV([{ id: inv.id, vendor: inv.vendor, date: inv.date, amount: inv.amount, status: inv.status, due: inv.due }], `${inv.id}.csv`)}>PDF</Button>
+                        <button onClick={() => setEditInv(inv)} className="rounded-lg p-2 text-text-2 transition hover:bg-white/5 hover:text-accent" aria-label="Edit"><Edit3 size={15} /></button>
+                        <button onClick={() => setDeleteId(inv.id)} className="rounded-lg p-2 text-text-2 transition hover:bg-white/5 hover:text-danger" aria-label="Delete"><Trash2 size={15} /></button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -98,6 +103,8 @@ export function InvoicesPage() {
       </Card>
 
       <NewInvoiceModal open={newOpen} onClose={() => setNewOpen(false)} onSave={async (inv) => { await insert(inv); }} />
+      <EditInvoiceModal inv={editInv} onClose={() => setEditInv(null)} onSave={async (id, patch) => { await update(id, patch); }} />
+      <DeleteConfirmModal open={!!deleteId} title="Delete invoice" message="This will permanently remove the invoice. This cannot be undone." loading={false} onConfirm={async () => { if (deleteId) { await remove(deleteId); } setDeleteId(null); }} onClose={() => setDeleteId(null)} />
     </div>
   );
 }
@@ -129,23 +136,13 @@ function NewInvoiceModal({ open, onClose, onSave }: { open: boolean; onClose: ()
   };
 
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title="New Invoice"
-      subtitle="Add a vendor invoice to track for payment."
-      footer={
-        <div className="flex items-center justify-end gap-2">
-          <Button variant="ghost" size="md" onClick={onClose} disabled={saving}>Cancel</Button>
-          <Button size="md" onClick={submit} disabled={saving}>{saving ? 'Saving…' : 'Add Invoice'}</Button>
-        </div>
-      }
-    >
+    <Modal open={open} onClose={onClose} title="New Invoice" subtitle="Add a vendor invoice to track for payment."
+      footer={<div className="flex items-center justify-end gap-2"><Button variant="ghost" size="md" onClick={onClose} disabled={saving}>Cancel</Button><Button size="md" onClick={submit} disabled={saving}>{saving ? 'Saving…' : 'Add Invoice'}</Button></div>}>
       <div className="space-y-4">
         {error && <div className="rounded-xl border border-danger/30 bg-danger/10 p-3 text-sm text-[#fca5a5]">{error}</div>}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input label="Vendor" value={vendor} onChange={(e) => setVendor(e.target.value)} placeholder="e.g. Figma, Inc." />
-          <Input label="Amount ($)" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
+          <Input label="Amount (R)" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
           <Input label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           <Input label="Due date" type="date" value={due} onChange={(e) => setDue(e.target.value)} />
           <div>
@@ -155,6 +152,76 @@ function NewInvoiceModal({ open, onClose, onSave }: { open: boolean; onClose: ()
             </select>
           </div>
         </div>
+      </div>
+    </Modal>
+  );
+}
+
+function EditInvoiceModal({ inv, onClose, onSave }: { inv: Invoice | null; onClose: () => void; onSave: (id: string, patch: Partial<Invoice>) => Promise<void> }) {
+  const [vendor, setVendor] = useState('');
+  const [amount, setAmount] = useState('');
+  const [date, setDate] = useState('');
+  const [due, setDue] = useState('');
+  const [status, setStatus] = useState<TxStatus>('pending');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (inv) {
+      setVendor(inv.vendor);
+      setAmount(String(inv.amount));
+      setDate(inv.date);
+      setDue(inv.due ?? '');
+      setStatus(inv.status);
+      setError(null);
+    }
+  }, [inv?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!inv) return null;
+
+  const submit = async () => {
+    if (!vendor.trim() || !amount) { setError('Vendor and amount are required.'); return; }
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave(inv.id, { vendor: vendor.trim(), amount: Number(amount) || 0, date, due: due || date, status });
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to update invoice.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal open={!!inv} onClose={onClose} title="Edit Invoice" subtitle="Update the invoice details."
+      footer={<div className="flex items-center justify-end gap-2"><Button variant="ghost" size="md" onClick={onClose} disabled={saving}>Cancel</Button><Button size="md" onClick={submit} disabled={saving}>{saving ? 'Saving…' : 'Save Changes'}</Button></div>}>
+      <div className="space-y-4">
+        {error && <div className="rounded-xl border border-danger/30 bg-danger/10 p-3 text-sm text-[#fca5a5]">{error}</div>}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Input label="Vendor" value={vendor} onChange={(e) => setVendor(e.target.value)} />
+          <Input label="Amount (R)" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          <Input label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <Input label="Due date" type="date" value={due} onChange={(e) => setDue(e.target.value)} />
+          <div>
+            <label className="mb-2 block text-xs font-medium text-text-2">Status</label>
+            <select value={status} onChange={(e) => setStatus(e.target.value as TxStatus)} className="input-base h-12 w-full cursor-pointer appearance-none px-4 text-sm capitalize">
+              {(['pending', 'reviewed', 'flagged'] as TxStatus[]).map((s) => <option key={s} className="bg-sidebar capitalize">{s}</option>)}
+            </select>
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+export function DeleteConfirmModal({ open, title, message, loading, onConfirm, onClose }: { open: boolean; title: string; message: string; loading: boolean; onConfirm: () => void; onClose: () => void }) {
+  return (
+    <Modal open={open} onClose={onClose} title={title} subtitle={message}
+      footer={<div className="flex items-center justify-end gap-2"><Button variant="ghost" size="md" onClick={onClose} disabled={loading}>Cancel</Button><Button variant="danger" size="md" onClick={onConfirm} disabled={loading} leftIcon={loading ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}>{loading ? 'Deleting…' : 'Delete'}</Button></div>}>
+      <div className="flex items-start gap-3 rounded-xl border border-danger/30 bg-danger/10 p-3.5">
+        <AlertTriangle size={18} className="mt-0.5 shrink-0 text-[#fca5a5]" />
+        <p className="text-sm text-text-2">{message}</p>
       </div>
     </Modal>
   );

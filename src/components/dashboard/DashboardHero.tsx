@@ -23,25 +23,26 @@ export function DashboardHero({ onNewTransaction }: DashboardHeroProps) {
         <div>
           <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-text-2">
             <Sparkles size={13} className="text-accent" />
-            AI analyzed your latest transactions
+            AI analysed your latest transactions
           </div>
           <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Good morning, <span className="text-gradient-blue">Alex</span>
+            Welcome to <span className="text-gradient-blue">Mzansi Ledger</span>
           </h1>
           <p className="mt-2 max-w-lg text-sm leading-relaxed text-text-2">
-            Your finances are in good shape. I found <span className="font-semibold text-white">1 duplicate</span>,{' '}
+            Your AI financial copilot for smarter business decisions. I found{' '}
+            <span className="font-semibold text-white">1 duplicate</span>,{' '}
             <span className="font-semibold text-white">2 savings opportunities</span>, and{' '}
-            <span className="font-semibold text-white">$12,840</span> in potential savings this month.
+            <span className="font-semibold text-white">R12,840</span> in potential savings this month.
           </p>
           <div className="mt-5 flex flex-wrap gap-2.5">
-            <Button leftIcon={<Plus size={16} />} onClick={() => onNewTransaction?.() ?? navigate('/upload')}>New Transaction</Button>
+            <Button leftIcon={<Plus size={16} />} onClick={() => onNewTransaction?.() ?? navigate('/ledger')}>New Transaction</Button>
             <Button variant="ghost" leftIcon={<Sparkles size={16} />} onClick={() => navigate('/copilot')}>Ask AI Copilot</Button>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4 lg:w-[360px]">
-          <HeroStat label="This month" value={184320} prefix="$" tone="text-white" />
+          <HeroStat label="This month" value={184320} prefix="R" tone="text-white" />
           <HeroStat label="vs last month" value={9} suffix="%" tone="text-success" />
-          <HeroStat label="Savings found" value={12840} prefix="$" tone="text-accent" />
+          <HeroStat label="Savings found" value={12840} prefix="R" tone="text-accent" />
           <HeroStat label="AI confidence" value={94} suffix="%" tone="text-purple" />
         </div>
       </div>

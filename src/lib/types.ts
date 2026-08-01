@@ -7,7 +7,10 @@ export type TxCategory =
   | 'Utilities'
   | 'Payroll'
   | 'Legal'
-  | 'Hardware';
+  | 'Hardware'
+  | 'Rent'
+  | 'Office Supplies'
+  | 'Other';
 export type TxSource = 'receipt' | 'invoice' | 'csv' | 'manual';
 
 export interface Transaction {

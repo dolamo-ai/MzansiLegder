@@ -10,8 +10,11 @@ import {
   Bell,
   Settings,
   X,
+  Workflow,
+  LogOut,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
@@ -21,6 +24,7 @@ interface SidebarProps {
 
 const nav = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/ledger', label: 'Ledger Workflow', icon: Workflow },
   { to: '/copilot', label: 'AI Copilot', icon: Sparkles },
   { to: '/transactions', label: 'Transactions', icon: Receipt },
   { to: '/invoices', label: 'Invoices', icon: FileText },
@@ -33,9 +37,10 @@ const nav = [
 ];
 
 export function Sidebar({ open, onClose }: SidebarProps) {
+  const { user, signOut } = useAuth();
+
   return (
     <>
-      {/* Mobile backdrop */}
       <div
         className={cn(
           'fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden',
@@ -53,14 +58,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         {/* Logo */}
         <div className="flex h-16 items-center justify-between px-5">
           <div className="flex items-center gap-2.5">
-            <div className="relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-primary to-accent shadow-glow">
-              <svg viewBox="0 0 24 24" className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 16 L9 7 L12 12 L15 9 L20 16" />
-              </svg>
-            </div>
+            <img src="/image.png" alt="Mzansi Ledger logo" className="h-9 w-9 rounded-xl object-cover ring-1 ring-white/10" />
             <div className="leading-tight">
-              <p className="text-sm font-bold tracking-tight text-white">CostPilot AI</p>
-              <p className="text-[10px] font-medium uppercase tracking-wider text-muted">Financial Copilot</p>
+              <p className="text-sm font-bold tracking-tight text-white">Mzansi Ledger</p>
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted">AI Financial Copilot</p>
             </div>
           </div>
           <button onClick={onClose} className="rounded-lg p-2 text-text-2 hover:bg-white/5 lg:hidden" aria-label="Close sidebar">
@@ -135,12 +136,20 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         <div className="border-t border-white/8 p-3">
           <div className="flex items-center gap-3 rounded-xl p-2 transition hover:bg-white/5">
             <div className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-purple to-primary text-sm font-bold text-white">
-              AM
+              {(user?.email ?? 'U').slice(0, 1).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-white">Alex Morgan</p>
-              <p className="truncate text-xs text-muted">alex@northwind.co</p>
+              <p className="truncate text-sm font-semibold text-white">{user?.email ?? 'User'}</p>
+              <p className="truncate text-xs text-muted">Signed in</p>
             </div>
+            <button
+              onClick={signOut}
+              className="rounded-lg p-2 text-muted transition hover:bg-white/5 hover:text-danger"
+              aria-label="Sign out"
+              title="Sign out"
+            >
+              <LogOut size={16} />
+            </button>
           </div>
         </div>
       </aside>

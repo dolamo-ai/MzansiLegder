@@ -39,7 +39,7 @@ export function KPICard({ label, value, format = 'currency', delta, icon: Icon, 
         </div>
         <p className="mt-4 text-xs font-medium uppercase tracking-wider text-muted">{label}</p>
         <p className="mt-1 text-3xl font-extrabold tracking-tight text-white">
-          {format === 'currency' ? '$' : ''}
+          {format === 'currency' ? 'R' : ''}
           <AnimatedNumber value={value} compact={value >= 100000} />
         </p>
         <div className="mt-3 h-12">{chart}</div>
