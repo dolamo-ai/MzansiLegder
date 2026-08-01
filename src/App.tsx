@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AppShell } from '@/components/layout/AppShell';
 import { DashboardPage } from '@/pages/DashboardPage';
@@ -64,11 +64,9 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
-      <AppShell>
-        <AnimatedRoutes />
-      </AppShell>
-    </BrowserRouter>
+    <AppShell>
+      <AnimatedRoutes />
+    </AppShell>
   );
 }
 
