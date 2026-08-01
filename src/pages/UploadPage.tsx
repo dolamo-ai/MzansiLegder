@@ -1,9 +1,15 @@
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Upload, FileText, FileSpreadsheet, File as FileIcon, X, Check, Sparkles, ScanLine, Calculator, Copy, BarChart3, Lightbulb } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { useTransactions } from '@/lib/hooks';
+import type { TxCategory } from '@/lib/types';
 import { cn, formatCurrency } from '@/lib/utils';
+
+const SAMPLE_VENDORS = ['Stripe','Notion Labs','AWS','HubSpot','Figma, Inc.','WeWork','Slack','Dell Technologies'];
+const SAMPLE_CATEGORIES: TxCategory[] = ['Software','Marketing','Office','Travel','Utilities','Payroll','Legal','Hardware'];
 
 type Stage = 'idle' | 'uploading' | 'processing' | 'done';
 
@@ -24,11 +30,14 @@ interface UploadedFile {
 }
 
 export function UploadPage() {
+  const navigate = useNavigate();
+  const { insert } = useTransactions();
   const [stage, setStage] = useState<Stage>('idle');
   const [progress, setProgress] = useState(0);
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [dragging, setDragging] = useState(false);
   const [activeStep, setActiveStep] = useState(-1);
+  const [createdCount, setCreatedCount] = useState(0);
 
   const addFiles = (list: FileList | null) => {
     if (!list) return;
@@ -64,7 +73,31 @@ export function UploadPage() {
     steps.forEach((_, i) => {
       setTimeout(() => setActiveStep(i), i * 850);
     });
-    setTimeout(() => setStage('done'), steps.length * 850 + 600);
+    setTimeout(async () => {
+      // Simulate AI extraction: create one transaction per uploaded file
+      let count = 0;
+      for (const f of files) {
+        const vendor = SAMPLE_VENDORS[Math.floor(Math.random() * SAMPLE_VENDORS.length)];
+        const category = SAMPLE_CATEGORIES[Math.floor(Math.random() * SAMPLE_CATEGORIES.length)];
+        const amount = Math.round(200 + Math.random() * 4000);
+        const vat = Math.round(amount * 0.2);
+        try {
+          await insert({
+            vendor,
+            amount,
+            vat,
+            category,
+            status: 'pending',
+            source: f.name.endsWith('.csv') ? 'csv' : f.name.match(/\.pdf|\.docx$/i) ? 'invoice' : 'receipt',
+            confidence: 0.7 + Math.random() * 0.28,
+            date: new Date().toISOString().slice(0, 10),
+          });
+          count++;
+        } catch { /* ignore individual failures */ }
+      }
+      setCreatedCount(count);
+      setStage('done');
+    }, steps.length * 850 + 600);
   };
 
   const reset = () => {
@@ -72,6 +105,7 @@ export function UploadPage() {
     setFiles([]);
     setProgress(0);
     setActiveStep(-1);
+    setCreatedCount(0);
   };
 
   return (
@@ -232,12 +266,12 @@ export function UploadPage() {
                     <span className="grid h-10 w-10 place-items-center rounded-xl bg-success/15"><Check size={20} className="text-success" /></span>
                     <div>
                       <p className="text-sm font-semibold text-white">Processing complete</p>
-                      <p className="text-xs text-text-2">3 transactions extracted, 1 duplicate flagged, 2 recommendations generated.</p>
+                      <p className="text-xs text-text-2">{createdCount} transaction{createdCount === 1 ? '' : 's'} extracted and queued for review.</p>
                     </div>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
-                    <Button size="sm">Review transactions</Button>
-                    <Button size="sm" variant="ghost">View recommendations</Button>
+                    <Button size="sm" onClick={() => navigate('/transactions')}>Review transactions</Button>
+                    <Button size="sm" variant="ghost" onClick={() => navigate('/copilot')}>View recommendations</Button>
                   </div>
                 </motion.div>
               )}

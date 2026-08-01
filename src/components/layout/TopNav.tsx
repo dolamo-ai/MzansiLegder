@@ -1,5 +1,7 @@
 import { Search, Bell, Moon, Sun, Sparkles, Menu, Command } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTheme } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 
 interface TopNavProps {
@@ -7,7 +9,8 @@ interface TopNavProps {
 }
 
 export function TopNav({ onMenuClick }: TopNavProps) {
-  const [dark, setDark] = useState(true);
+  const { theme, toggle } = useTheme();
+  const navigate = useNavigate();
   const [notifOpen, setNotifOpen] = useState(false);
 
   return (
@@ -78,15 +81,19 @@ export function TopNav({ onMenuClick }: TopNavProps) {
 
         {/* Dark mode toggle */}
         <button
-          onClick={() => setDark((v) => !v)}
+          onClick={toggle}
           className="rounded-xl p-2.5 text-text-2 transition hover:bg-white/5 hover:text-white"
-          aria-label="Toggle theme"
+          aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+          title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
         >
-          {dark ? <Moon size={18} /> : <Sun size={18} />}
+          {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
         </button>
 
         {/* AI button */}
-        <button className="hidden items-center gap-2 rounded-xl bg-gradient-to-r from-primary/20 to-accent/20 px-3.5 py-2 text-sm font-medium text-white ring-1 ring-white/10 transition hover:from-primary/30 hover:to-accent/30 sm:flex">
+        <button
+          onClick={() => navigate('/copilot')}
+          className="hidden items-center gap-2 rounded-xl bg-gradient-to-r from-primary/20 to-accent/20 px-3.5 py-2 text-sm font-medium text-white ring-1 ring-white/10 transition hover:from-primary/30 hover:to-accent/30 sm:flex"
+        >
           <Sparkles size={15} className="text-accent" />
           Ask AI
         </button>

@@ -1,10 +1,15 @@
 import { motion } from 'framer-motion';
-import { Sparkles, ArrowUpRight, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Sparkles, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
-import { formatCurrency } from '@/lib/utils';
 
-export function DashboardHero() {
+interface DashboardHeroProps {
+  onNewTransaction?: () => void;
+}
+
+export function DashboardHero({ onNewTransaction }: DashboardHeroProps) {
+  const navigate = useNavigate();
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -18,7 +23,7 @@ export function DashboardHero() {
         <div>
           <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-text-2">
             <Sparkles size={13} className="text-accent" />
-            AI analyzed 16 new transactions
+            AI analyzed your latest transactions
           </div>
           <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
             Good morning, <span className="text-gradient-blue">Alex</span>
@@ -29,8 +34,8 @@ export function DashboardHero() {
             <span className="font-semibold text-white">$12,840</span> in potential savings this month.
           </p>
           <div className="mt-5 flex flex-wrap gap-2.5">
-            <Button leftIcon={<Plus size={16} />}>New Transaction</Button>
-            <Button variant="ghost" leftIcon={<Sparkles size={16} />}>Ask AI Copilot</Button>
+            <Button leftIcon={<Plus size={16} />} onClick={() => onNewTransaction?.() ?? navigate('/upload')}>New Transaction</Button>
+            <Button variant="ghost" leftIcon={<Sparkles size={16} />} onClick={() => navigate('/copilot')}>Ask AI Copilot</Button>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4 lg:w-[360px]">
@@ -56,5 +61,3 @@ function HeroStat({ label, value, prefix, suffix, tone }: { label: string; value
     </div>
   );
 }
-
-export { formatCurrency };

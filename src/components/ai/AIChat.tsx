@@ -2,28 +2,34 @@ import { useEffect, useRef, useState } from 'react';
 import { Sparkles, Send, Paperclip, Mic, ArrowUp } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { initialChat, suggestedPrompts, type ChatMessage } from '@/data/mock';
+import { AI_COPILOT_URL } from '@/lib/supabase';
+import type { ChatMessage } from '@/lib/types';
 
 interface AIChatProps {
   className?: string;
   compact?: boolean;
 }
 
-function generateReply(prompt: string): string {
-  const p = prompt.toLowerCase();
-  if (p.includes('duplicate'))
-    return "I found 1 duplicate: **TX-10427** (Google Ads, $1,850) matches **TX-10423** from 3 days earlier. I recommend disputing the second charge with your card issuer and flagging it in your books. Want me to draft a dispute note?";
-  if (p.includes('overspend') || p.includes('over'))
-    return "Your **Marketing** category is at 108% of budget ($21,600 of $20,000). Software is at 85% — healthy. The biggest lever is pausing two underperforming Google Ads campaigns that together cost $1,850 this month.";
-  if (p.includes('vat'))
-    return "Your recorded VAT for Q3 is **$24,680** across 47 invoices. One gap: TX-10429 (Gusto, $12,800) has no VAT — payroll services are typically VAT-exempt, but you should confirm with your accountant.";
-  if (p.includes('subscription') || p.includes('cancel'))
-    return "Three subscriptions look underused: **Notion** ($960/yr, 3 active seats), **Lyft Business** ($210 last month, 2 rides), and **Stapel** ($320/yr). Cancelling Notion's spare seats alone saves ~$480/yr.";
-  return "I've pulled the latest figures. Your total expenses this month are **$184,320**, up 9% vs last month — driven mostly by a payroll run and AWS growth. Potential savings identified: **$12,840**. Want me to break that down by category?";
-}
+const FALLBACK_REPLY =
+  "I'm having trouble reaching the AI service right now. Please check your connection and try again in a moment.";
+
+const SUGGESTED_PROMPTS = [
+  'Where am I overspending this month?',
+  'Find all duplicate transactions',
+  'Summarize my VAT exposure for Q3',
+  'Which subscriptions can I cancel?',
+];
 
 export function AIChat({ className, compact = false }: AIChatProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>(initialChat);
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: 'm1',
+      role: 'assistant',
+      content:
+        "Hi! I'm your CostPilot AI copilot. I can analyze your transactions, find duplicates, spot savings, and answer financial questions. What would you like to look at?",
+      createdAt: new Date(Date.now() - 60000).toISOString(),
+    },
+  ]);
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -32,7 +38,7 @@ export function AIChat({ className, compact = false }: AIChatProps) {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, typing]);
 
-  const send = (text: string) => {
+  const send = async (text: string) => {
     if (!text.trim() || typing) return;
     const userMsg: ChatMessage = {
       id: `u-${Date.now()}`,
@@ -43,16 +49,34 @@ export function AIChat({ className, compact = false }: AIChatProps) {
     setMessages((m) => [...m, userMsg]);
     setInput('');
     setTyping(true);
-    setTimeout(() => {
+
+    try {
+      const history = [...messages, userMsg].map((m) => ({ role: m.role, content: m.content }));
+      const res = await fetch(AI_COPILOT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: history }),
+      });
+      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      const data = await res.json();
       const reply: ChatMessage = {
         id: `a-${Date.now()}`,
         role: 'assistant',
-        content: generateReply(text),
+        content: data?.reply ?? FALLBACK_REPLY,
         createdAt: new Date().toISOString(),
       };
       setMessages((m) => [...m, reply]);
+    } catch {
+      const reply: ChatMessage = {
+        id: `a-${Date.now()}`,
+        role: 'assistant',
+        content: FALLBACK_REPLY,
+        createdAt: new Date().toISOString(),
+      };
+      setMessages((m) => [...m, reply]);
+    } finally {
       setTyping(false);
-    }, 1400);
+    }
   };
 
   return (
@@ -77,17 +101,13 @@ export function AIChat({ className, compact = false }: AIChatProps) {
             )}
             <div
               className={cn(
-                'max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed',
+                'max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap',
                 m.role === 'assistant'
                   ? 'rounded-tl-sm bg-white/5 text-text-1'
                   : 'rounded-tr-sm bg-gradient-to-br from-primary to-primary-hover text-white shadow-glow',
               )}
             >
-              {m.content.split('\n').map((line, i) => (
-                <p key={i} className={i > 0 ? 'mt-1.5' : ''}>
-                  {renderRich(line)}
-                </p>
-              ))}
+              {renderRich(m.content)}
             </div>
           </motion.div>
         ))}
@@ -121,7 +141,7 @@ export function AIChat({ className, compact = false }: AIChatProps) {
       {/* Suggested prompts */}
       {messages.length <= 1 && (
         <div className="mt-4 flex flex-wrap gap-2">
-          {suggestedPrompts.map((p) => (
+          {SUGGESTED_PROMPTS.map((p) => (
             <button
               key={p}
               onClick={() => send(p)}
@@ -170,7 +190,6 @@ export function AIChat({ className, compact = false }: AIChatProps) {
 }
 
 function renderRich(text: string) {
-  // simple **bold** parser
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {

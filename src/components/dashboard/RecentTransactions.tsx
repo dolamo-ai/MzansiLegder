@@ -3,11 +3,11 @@ import { ArrowRight } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { transactions } from '@/data/mock';
+import type { Transaction } from '@/lib/types';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
-export function RecentTransactions() {
-  const rows = transactions.slice(0, 6);
+export function RecentTransactions({ rows }: { rows: Transaction[] }) {
+  const list = rows.slice(0, 6);
   return (
     <Card className="p-0">
       <div className="p-6 pb-4">
@@ -33,7 +33,10 @@ export function RecentTransactions() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((tx) => (
+            {list.length === 0 && (
+              <tr><td colSpan={5} className="px-6 py-10 text-center text-sm text-muted">No transactions yet.</td></tr>
+            )}
+            {list.map((tx) => (
               <tr key={tx.id} className="border-b border-white/5 transition last:border-0 hover:bg-white/3">
                 <td className="px-6 py-3.5">
                   <div className="flex items-center gap-3">

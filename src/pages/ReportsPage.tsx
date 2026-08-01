@@ -1,16 +1,51 @@
-import { FileText, Download, FileSpreadsheet, File, Sparkles, TrendingUp, TrendingDown, AlertTriangle, Lightbulb } from 'lucide-react';
+import { FileText, Download, FileSpreadsheet, File as FileIcon, Sparkles, TrendingUp, TrendingDown, AlertTriangle, Lightbulb } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
+import { useTransactions } from '@/lib/hooks';
 import { expenseTrend, categoryBreakdown, aiInsights } from '@/data/mock';
+import { exportCSV, exportExcel, exportPDF } from '@/lib/export';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
 const tooltipStyle = { backgroundColor: '#18181B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '12px', color: '#fff' };
 
 export function ReportsPage() {
+  const { rows } = useTransactions();
+
+  const buildReportHTML = () => {
+    const total = rows.reduce((a, r) => a + Number(r.amount), 0);
+    const vat = rows.reduce((a, r) => a + Number(r.vat), 0);
+    const stats = `
+      <div class="stat"><div class="v">${formatCurrency(total)}</div><div class="l">Total Expenses</div></div>
+      <div class="stat"><div class="v">${rows.length}</div><div class="l">Transactions</div></div>
+      <div class="stat"><div class="v">${formatCurrency(vat)}</div><div class="l">VAT</div></div>
+      <div class="stat"><div class="v">${formatCurrency(12840)}</div><div class="l">Savings</div></div>`;
+    const txRows = rows.slice(0, 12).map((r) => `<tr><td>${r.id}</td><td>${r.vendor}</td><td>${formatDate(r.date)}</td><td>${r.category}</td><td>${r.status}</td><td style="text-align:right">${formatCurrency(Number(r.amount))}</td></tr>`).join('');
+    const insights = aiInsights.slice(0, 4).map((i) => `<li><strong>${i.title}</strong> — ${i.detail}</li>`).join('');
+    return `
+      <h1>Q3 Financial Report</h1>
+      <p>Northwind Inc. · Generated ${formatDate(new Date().toISOString())}</p>
+      <h2>Summary</h2>
+      <div style="margin:12px 0">${stats}</div>
+      <h2>Expense Trend</h2>
+      <table><thead><tr><th>Month</th><th>Expenses</th><th>Budget</th></tr></thead><tbody>
+      ${expenseTrend.map((d) => `<tr><td>${d.month}</td><td style="text-align:right">${formatCurrency(d.expenses)}</td><td style="text-align:right">${formatCurrency(d.budget)}</td></tr>`).join('')}
+      </tbody></table>
+      <h2>Recent Transactions</h2>
+      <table><thead><tr><th>ID</th><th>Vendor</th><th>Date</th><th>Category</th><th>Status</th><th style="text-align:right">Amount</th></tr></thead><tbody>${txRows}</tbody></table>
+      <h2>AI Insights</h2>
+      <ul>${insights}</ul>
+    `;
+  };
+
+  const handlePDF = () => exportPDF('Q3 Financial Report', buildReportHTML(), 'costpilot-q3-report.pdf');
+  const handleExcel = () => exportExcel(rows.map((r) => ({ id: r.id, vendor: r.vendor, date: r.date, amount: r.amount, vat: r.vat, category: r.category, status: r.status })), 'costpilot-report.xls');
+  const handleCSV = () => exportCSV(rows.map((r) => ({ id: r.id, vendor: r.vendor, date: r.date, amount: r.amount, vat: r.vat, category: r.category, status: r.status })), 'costpilot-report.csv');
+  const handleDownload = () => handlePDF();
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -19,10 +54,10 @@ export function ReportsPage() {
           <p className="mt-1 text-sm text-text-2">Generate and export professional financial reports.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="ghost" leftIcon={<FileText size={16} />}>Export PDF</Button>
-          <Button variant="ghost" leftIcon={<FileSpreadsheet size={16} />}>Export Excel</Button>
-          <Button variant="ghost" leftIcon={<File size={16} />}>Export CSV</Button>
-          <Button leftIcon={<Download size={16} />}>Download</Button>
+          <Button variant="ghost" leftIcon={<FileText size={16} />} onClick={handlePDF}>Export PDF</Button>
+          <Button variant="ghost" leftIcon={<FileSpreadsheet size={16} />} onClick={handleExcel}>Export Excel</Button>
+          <Button variant="ghost" leftIcon={<FileIcon size={16} />} onClick={handleCSV}>Export CSV</Button>
+          <Button leftIcon={<Download size={16} />} onClick={handleDownload}>Download</Button>
         </div>
       </div>
 
@@ -62,9 +97,9 @@ export function ReportsPage() {
             {/* Summary */}
             <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
               {[
-                { label: 'Total Expenses', value: 184320, prefix: '$' },
-                { label: 'Invoices', value: 47 },
-                { label: 'VAT', value: 24680, prefix: '$' },
+                { label: 'Total Expenses', value: rows.reduce((a, r) => a + Number(r.amount), 0), prefix: '$' },
+                { label: 'Transactions', value: rows.length },
+                { label: 'VAT', value: rows.reduce((a, r) => a + Number(r.vat), 0), prefix: '$' },
                 { label: 'Savings', value: 12840, prefix: '$' },
               ].map((s) => (
                 <div key={s.label} className="rounded-xl border border-white/8 bg-white/3 p-4">
@@ -147,19 +182,19 @@ export function ReportsPage() {
         <SectionHeader title="Report Templates" subtitle="Quick-generate common reports" />
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[
-            { name: 'Monthly Expense Report', desc: 'Detailed breakdown of all expenses', icon: TrendingUp, tone: 'from-primary/15 to-primary/5' },
-            { name: 'VAT Summary', desc: 'VAT collected and owed for the period', icon: FileText, tone: 'from-accent/15 to-accent/5' },
-            { name: 'Savings Report', desc: 'AI-identified savings opportunities', icon: Lightbulb, tone: 'from-success/15 to-success/5' },
-            { name: 'Cash Flow Statement', desc: 'Inflows and outflows by week', icon: TrendingDown, tone: 'from-purple/15 to-purple/5' },
-            { name: 'Anomaly Report', desc: 'Flagged and duplicate transactions', icon: AlertTriangle, tone: 'from-warning/15 to-warning/5' },
-            { name: 'Annual Summary', desc: 'Year-over-year financial overview', icon: Sparkles, tone: 'from-primary/15 to-accent/5' },
+            { name: 'Monthly Expense Report', desc: 'Detailed breakdown of all expenses', icon: TrendingUp, tone: 'from-primary/15 to-primary/5', action: handlePDF },
+            { name: 'VAT Summary', desc: 'VAT collected and owed for the period', icon: FileText, tone: 'from-accent/15 to-accent/5', action: handleExcel },
+            { name: 'Savings Report', desc: 'AI-identified savings opportunities', icon: Lightbulb, tone: 'from-success/15 to-success/5', action: handleCSV },
+            { name: 'Cash Flow Statement', desc: 'Inflows and outflows by week', icon: TrendingDown, tone: 'from-purple/15 to-purple/5', action: handleExcel },
+            { name: 'Anomaly Report', desc: 'Flagged and duplicate transactions', icon: AlertTriangle, tone: 'from-warning/15 to-warning/5', action: handleCSV },
+            { name: 'Annual Summary', desc: 'Year-over-year financial overview', icon: Sparkles, tone: 'from-primary/15 to-accent/5', action: handlePDF },
           ].map((t) => (
             <motion.div key={t.name} whileHover={{ y: -2 }}>
               <Card className={`bg-gradient-to-br ${t.tone}`}>
                 <span className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 text-white"><t.icon size={18} /></span>
                 <p className="mt-3 text-sm font-bold text-white">{t.name}</p>
                 <p className="mt-1 text-xs text-text-2">{t.desc}</p>
-                <Button size="sm" variant="ghost" className="mt-3" rightIcon={<Download size={14} />}>Generate</Button>
+                <Button size="sm" variant="ghost" className="mt-3" rightIcon={<Download size={14} />} onClick={t.action}>Generate</Button>
               </Card>
             </motion.div>
           ))}
