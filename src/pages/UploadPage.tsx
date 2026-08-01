@@ -288,5 +288,3 @@ function FileIconType({ name }: { name: string }) {
   const Icon = ext === 'csv' ? FileSpreadsheet : FileText;
   return <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/5 text-accent"><Icon size={16} /></span>;
 }
-
-export { formatCurrency };

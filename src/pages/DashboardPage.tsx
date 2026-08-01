@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { DollarSign, FileText, PiggyBank, Receipt, Plus, Sparkles } from 'lucide-react';
 import { DashboardHero } from '@/components/dashboard/DashboardHero';
 import { KPICard, MiniSparkline, MiniBars } from '@/components/dashboard/KPICard';
-import { AIInsights } from '@/components/ai/AIInsights';
+import { AIInsights, deriveInsights } from '@/components/ai/AIInsights';
 import { AIChat } from '@/components/ai/AIChat';
 import { RecentTransactions } from '@/components/dashboard/RecentTransactions';
 import { QuickActions } from '@/components/dashboard/QuickActions';
@@ -11,21 +11,32 @@ import { Card } from '@/components/ui/Card';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Button } from '@/components/ui/Button';
 import { NewTransactionModal } from '@/components/transactions/NewTransactionModal';
-import { useTransactions } from '@/lib/hooks';
-import { aiInsights, aiScore, expenseTrend } from '@/data/mock';
-import { formatCurrency } from '@/lib/utils';
+import { useTransactions, useInvoices, useGoals } from '@/lib/hooks';
 
 export function DashboardPage() {
   const navigate = useNavigate();
   const { rows, insert } = useTransactions();
+  const { rows: invoices } = useInvoices();
+  const { rows: goals } = useGoals();
   const [newTxOpen, setNewTxOpen] = useState(false);
 
   const kpis = useMemo(() => {
     const total = rows.reduce((a, r) => a + Number(r.amount), 0);
-    const vat = rows.reduce((a, r) => a + Number(r.vat), 0);
-    const invoices = rows.filter((r) => r.source === 'invoice').length;
-    const savings = aiInsights.filter((i) => i.amount).reduce((a, i) => a + (i.amount ?? 0), 0);
-    return { total, vat, invoices, savings };
+    const vat = rows.reduce((a, r) => a + Number(r.vat || 0), 0);
+    const invCount = invoices.length;
+    const { insights } = deriveInsights(rows, goals);
+    const savings = insights.filter((i) => i.amount && (i.type === 'savings' || i.type === 'duplicate')).reduce((a, i) => a + (i.amount ?? 0), 0);
+    return { total, vat, invoices: invCount, savings };
+  }, [rows, invoices, goals]);
+
+  const sparkData = useMemo(() => {
+    const byMonth = new Map<string, number>();
+    for (const tx of rows) {
+      const m = (tx.date || '').slice(0, 7);
+      byMonth.set(m, (byMonth.get(m) ?? 0) + Number(tx.amount));
+    }
+    const sorted = [...byMonth.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-7);
+    return sorted.map(([, v]) => v);
   }, [rows]);
 
   const handleNewTx = async (tx: Omit<typeof rows[number], 'id'>) => {
@@ -34,13 +45,13 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <DashboardHero onNewTransaction={() => setNewTxOpen(true)} />
+      <DashboardHero onNewTransaction={() => setNewTxOpen(true)} transactions={rows} goals={goals} />
 
       {/* Action bar */}
       <div className="flex flex-wrap gap-2.5">
         <Button leftIcon={<Plus size={16} />} onClick={() => setNewTxOpen(true)}>New Transaction</Button>
         <Button variant="ghost" leftIcon={<Sparkles size={16} />} onClick={() => navigate('/copilot')}>Ask AI Copilot</Button>
-        <Button variant="ghost" onClick={() => navigate('/upload')}>Upload Receipt</Button>
+        <Button variant="ghost" onClick={() => navigate('/ledger')}>Ledger Workflow</Button>
         <Button variant="ghost" onClick={() => navigate('/reports')}>Generate Report</Button>
       </div>
 
@@ -52,7 +63,7 @@ export function DashboardPage() {
           delta={9}
           icon={DollarSign}
           iconTone="bg-primary/15 text-[#93c5fd]"
-          chart={<MiniSparkline data={expenseTrend.map((d) => d.expenses)} color="#2563EB" />}
+          chart={<MiniSparkline data={sparkData.length ? sparkData : [0]} color="#2563EB" />}
           delay={0}
         />
         <KPICard
@@ -86,7 +97,7 @@ export function DashboardPage() {
       </div>
 
       {/* AI Insights */}
-      <AIInsights />
+      <AIInsights transactions={rows} goals={goals} />
 
       {/* AI Chat + Quick Actions */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -113,13 +124,11 @@ export function DashboardPage() {
 
       {/* Footer */}
       <footer className="flex flex-col items-center justify-between gap-2 border-t border-white/8 pt-6 text-xs text-muted sm:flex-row">
-        <p>CostPilot AI — Your AI Financial Copilot</p>
-        <p>All systems operational · v2.4.0</p>
+        <p>Mzansi Ledger — Your AI Financial Copilot</p>
+        <p>All systems operational · v1.0</p>
       </footer>
 
       <NewTransactionModal open={newTxOpen} onClose={() => setNewTxOpen(false)} onSave={handleNewTx} />
     </div>
   );
 }
-
-export { formatCurrency, aiScore };

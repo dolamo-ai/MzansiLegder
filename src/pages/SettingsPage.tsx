@@ -3,6 +3,7 @@ import { User, Bell, Shield, CreditCard, Palette, Globe, Check } from 'lucide-re
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
 const tabs = [
@@ -15,13 +16,18 @@ const tabs = [
 ];
 
 export function SettingsPage() {
+  const { user } = useAuth();
   const [active, setActive] = useState('profile');
   const [saved, setSaved] = useState(false);
+  const [name, setName] = useState('');
+  const [company, setCompany] = useState('');
 
   const save = () => {
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
+
+  const initials = (user?.email ?? 'U').slice(0, 2).toUpperCase();
 
   return (
     <div className="space-y-6">
@@ -31,7 +37,6 @@ export function SettingsPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[220px_1fr]">
-        {/* Tabs */}
         <nav className="no-scrollbar flex gap-1.5 overflow-x-auto lg:flex-col">
           {tabs.map((t) => (
             <button
@@ -48,19 +53,18 @@ export function SettingsPage() {
           ))}
         </nav>
 
-        {/* Panel */}
         <Card glow>
           {active === 'profile' && (
             <div className="space-y-5">
               <h3 className="text-base font-bold text-white">Profile</h3>
               <div className="flex items-center gap-4">
-                <div className="grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-purple to-primary text-xl font-bold text-white">AM</div>
+                <div className="grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-purple to-primary text-xl font-bold text-white">{initials}</div>
                 <Button variant="ghost" size="sm">Change avatar</Button>
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Input label="Full name" defaultValue="Alex Morgan" />
-                <Input label="Email" defaultValue="alex@northwind.co" />
-                <Input label="Company" defaultValue="Northwind Inc." />
+                <Input label="Full name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
+                <Input label="Email" value={user?.email ?? ''} disabled />
+                <Input label="Company" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Your business name" />
                 <Input label="Role" defaultValue="Finance Lead" />
               </div>
             </div>
@@ -83,7 +87,7 @@ export function SettingsPage() {
           {active === 'security' && (
             <div className="space-y-5">
               <h3 className="text-base font-bold text-white">Security</h3>
-              <Input label="Current password" type="password" defaultValue="password" />
+              <Input label="Current password" type="password" placeholder="••••••••" />
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Input label="New password" type="password" placeholder="••••••••" />
                 <Input label="Confirm password" type="password" placeholder="••••••••" />
@@ -97,7 +101,7 @@ export function SettingsPage() {
               <h3 className="text-base font-bold text-white">Billing</h3>
               <div className="rounded-xl border border-primary/30 bg-primary/10 p-4">
                 <p className="text-sm font-semibold text-white">Pro plan</p>
-                <p className="mt-1 text-xs text-text-2">$49/mo · renews on Aug 15, 2026</p>
+                <p className="mt-1 text-xs text-text-2">R199/mo · renews monthly</p>
               </div>
               <Input label="Payment method" defaultValue="Visa •••• 4242" />
               <div className="flex gap-2">
@@ -131,7 +135,8 @@ export function SettingsPage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-2 block text-xs font-medium text-text-2">Currency</label>
-                  <select className="input-base h-12 w-full cursor-pointer appearance-none px-4 text-sm">
+                  <select className="input-base h-12 w-full cursor-pointer appearance-none px-4 text-sm" defaultValue="ZAR">
+                    <option className="bg-sidebar">ZAR — South African Rand</option>
                     <option className="bg-sidebar">USD — US Dollar</option>
                     <option className="bg-sidebar">EUR — Euro</option>
                     <option className="bg-sidebar">GBP — British Pound</option>
@@ -139,9 +144,9 @@ export function SettingsPage() {
                 </div>
                 <div>
                   <label className="mb-2 block text-xs font-medium text-text-2">Date format</label>
-                  <select className="input-base h-12 w-full cursor-pointer appearance-none px-4 text-sm">
-                    <option className="bg-sidebar">MM/DD/YYYY</option>
+                  <select className="input-base h-12 w-full cursor-pointer appearance-none px-4 text-sm" defaultValue="DD/MM/YYYY">
                     <option className="bg-sidebar">DD/MM/YYYY</option>
+                    <option className="bg-sidebar">MM/DD/YYYY</option>
                     <option className="bg-sidebar">YYYY-MM-DD</option>
                   </select>
                 </div>

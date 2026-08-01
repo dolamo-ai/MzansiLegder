@@ -1,10 +1,20 @@
+import { useMemo } from 'react';
 import { AlertTriangle, Bell, CheckCircle, Info, type LucideIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { SectionHeader } from '@/components/ui/SectionHeader';
-import { alerts, type Alert } from '@/data/mock';
-import { cn, timeAgo } from '@/lib/utils';
+import { useTransactions, useGoals } from '@/lib/hooks';
+import { deriveInsights } from '@/components/ai/AIInsights';
+import { cn, formatCurrency, timeAgo } from '@/lib/utils';
+
+interface Alert {
+  id: string;
+  title: string;
+  detail: string;
+  level: 'info' | 'warning' | 'danger';
+  createdAt: string;
+}
 
 const meta: Record<Alert['level'], { icon: LucideIcon; tone: string; bg: string }> = {
   danger: { icon: AlertTriangle, tone: 'text-danger', bg: 'bg-danger/10' },
@@ -13,6 +23,30 @@ const meta: Record<Alert['level'], { icon: LucideIcon; tone: string; bg: string 
 };
 
 export function AlertsPage() {
+  const { rows } = useTransactions();
+  const { rows: goals } = useGoals();
+
+  const alerts: Alert[] = useMemo(() => {
+    const { insights } = deriveInsights(rows, goals);
+    return insights.map((ins) => {
+      const level: Alert['level'] = ins.severity === 'high' ? 'danger' : ins.severity === 'medium' ? 'warning' : 'info';
+      const detail = ins.amount ? `${ins.detail} Impact: ${formatCurrency(ins.amount)}` : ins.detail;
+      return {
+        id: ins.id,
+        title: ins.title,
+        detail,
+        level,
+        createdAt: new Date().toISOString(),
+      };
+    });
+  }, [rows, goals]);
+
+  const counts = {
+    danger: alerts.filter((a) => a.level === 'danger').length,
+    warning: alerts.filter((a) => a.level === 'warning').length,
+    info: alerts.filter((a) => a.level === 'info').length,
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -22,9 +56,9 @@ export function AlertsPage() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {[
-          { label: 'Critical', value: alerts.filter((a) => a.level === 'danger').length, tone: 'text-danger', bg: 'bg-danger/10' },
-          { label: 'Warnings', value: alerts.filter((a) => a.level === 'warning').length, tone: 'text-warning', bg: 'bg-warning/10' },
-          { label: 'Info', value: alerts.filter((a) => a.level === 'info').length, tone: 'text-accent', bg: 'bg-accent/10' },
+          { label: 'Critical', value: counts.danger, tone: 'text-danger', bg: 'bg-danger/10' },
+          { label: 'Warnings', value: counts.warning, tone: 'text-warning', bg: 'bg-warning/10' },
+          { label: 'Info', value: counts.info, tone: 'text-accent', bg: 'bg-accent/10' },
         ].map((s) => (
           <Card key={s.label} className="p-4">
             <div className="flex items-center gap-3">
@@ -45,6 +79,13 @@ export function AlertsPage() {
           <SectionHeader title="All Alerts" subtitle="Sorted by most recent" action={<Button size="sm" variant="ghost" leftIcon={<CheckCircle size={14} />}>Mark all read</Button>} />
         </div>
         <div className="space-y-1 p-3">
+          {alerts.length === 0 && (
+            <div className="flex flex-col items-center gap-2 py-12 text-center">
+              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-success/10 text-success"><CheckCircle size={24} /></span>
+              <p className="text-sm font-medium text-white">No alerts</p>
+              <p className="text-xs text-text-2">Your transactions look clean.</p>
+            </div>
+          )}
           {alerts.map((a, i) => {
             const m = meta[a.level];
             return (

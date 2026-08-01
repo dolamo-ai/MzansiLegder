@@ -26,7 +26,7 @@ export function AIChat({ className, compact = false }: AIChatProps) {
       id: 'm1',
       role: 'assistant',
       content:
-        "Hi! I'm your CostPilot AI copilot. I can analyze your transactions, find duplicates, spot savings, and answer financial questions. What would you like to look at?",
+        "Hi! I'm your Mzansi Ledger AI copilot. I can analyse your transactions, find duplicates, spot savings, and answer financial questions. What would you like to look at?",
       createdAt: new Date(Date.now() - 60000).toISOString(),
     },
   ]);

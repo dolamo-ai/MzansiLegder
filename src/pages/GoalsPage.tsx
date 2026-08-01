@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Target, Plus, Calendar, Edit3, Trash2, Loader2, AlertTriangle } from 'lucide-react';
+import { Target, Plus, Edit3, Trash2, Loader2, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -222,5 +222,3 @@ function EditGoalModal({ goal, onClose, onSave }: { goal: Goal | null; onClose: 
     </Modal>
   );
 }
-
-export { Calendar };

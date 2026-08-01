@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Workflow, Sparkles, ClipboardPaste, Check, X, AlertTriangle, FileText,
-  Calculator, ArrowRight, Edit3, Save, Loader2, Wand2,
+  Calculator, Edit3, Loader2, Wand2,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/Badge';
 import { EXTRACT_TX_URL, supabase } from '@/lib/supabase';
 import { useTransactions } from '@/lib/hooks';
 import type { TxCategory } from '@/lib/types';
-import { cn, formatCurrency } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 interface AIAnalysis {
   validation_status: 'clean' | 'requires_review' | 'rejected';
@@ -320,5 +320,3 @@ function Field({ label, value, editing, onChange, type = 'text' }: { label: stri
     </div>
   );
 }
-
-export { formatCurrency, ArrowRight, Save };

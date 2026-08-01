@@ -3,13 +3,24 @@ import { useNavigate } from 'react-router-dom';
 import { Sparkles, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
+import { deriveInsights } from '@/components/ai/AIInsights';
+import type { Transaction, Goal } from '@/lib/types';
+import { formatCurrency } from '@/lib/utils';
 
 interface DashboardHeroProps {
   onNewTransaction?: () => void;
+  transactions?: Transaction[];
+  goals?: Goal[];
 }
 
-export function DashboardHero({ onNewTransaction }: DashboardHeroProps) {
+export function DashboardHero({ onNewTransaction, transactions = [], goals = [] }: DashboardHeroProps) {
   const navigate = useNavigate();
+  const { insights } = deriveInsights(transactions, goals);
+  const duplicates = insights.filter((i) => i.type === 'duplicate').length;
+  const savingsOps = insights.filter((i) => i.type === 'savings').length;
+  const totalSavings = insights.filter((i) => i.amount && (i.type === 'savings' || i.type === 'duplicate')).reduce((a, i) => a + (i.amount ?? 0), 0);
+  const monthTotal = transactions.reduce((a, t) => a + Number(t.amount), 0);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -30,9 +41,9 @@ export function DashboardHero({ onNewTransaction }: DashboardHeroProps) {
           </h1>
           <p className="mt-2 max-w-lg text-sm leading-relaxed text-text-2">
             Your AI financial copilot for smarter business decisions. I found{' '}
-            <span className="font-semibold text-white">1 duplicate</span>,{' '}
-            <span className="font-semibold text-white">2 savings opportunities</span>, and{' '}
-            <span className="font-semibold text-white">R12,840</span> in potential savings this month.
+            <span className="font-semibold text-white">{duplicates} duplicate{duplicates === 1 ? '' : 's'}</span>,{' '}
+            <span className="font-semibold text-white">{savingsOps} savings opportunit{savingsOps === 1 ? 'y' : 'ies'}</span>, and{' '}
+            <span className="font-semibold text-white">{formatCurrency(totalSavings)}</span> in potential savings this month.
           </p>
           <div className="mt-5 flex flex-wrap gap-2.5">
             <Button leftIcon={<Plus size={16} />} onClick={() => onNewTransaction?.() ?? navigate('/ledger')}>New Transaction</Button>
@@ -40,10 +51,10 @@ export function DashboardHero({ onNewTransaction }: DashboardHeroProps) {
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4 lg:w-[360px]">
-          <HeroStat label="This month" value={184320} prefix="R" tone="text-white" />
-          <HeroStat label="vs last month" value={9} suffix="%" tone="text-success" />
-          <HeroStat label="Savings found" value={12840} prefix="R" tone="text-accent" />
-          <HeroStat label="AI confidence" value={94} suffix="%" tone="text-purple" />
+          <HeroStat label="This month" value={monthTotal} prefix="R" tone="text-white" />
+          <HeroStat label="AI findings" value={insights.length} tone="text-warning" />
+          <HeroStat label="Savings found" value={totalSavings} prefix="R" tone="text-accent" />
+          <HeroStat label="Transactions" value={transactions.length} tone="text-purple" />
         </div>
       </div>
     </motion.div>
@@ -56,7 +67,7 @@ function HeroStat({ label, value, prefix, suffix, tone }: { label: string; value
       <p className="text-xs font-medium uppercase tracking-wider text-muted">{label}</p>
       <p className={`mt-1 text-2xl font-extrabold tracking-tight ${tone}`}>
         {prefix}
-        <AnimatedNumber value={value} />
+        <AnimatedNumber value={value} compact={value >= 100000} />
         {suffix}
       </p>
     </div>

@@ -7,7 +7,7 @@ export function CopilotPage() {
     <div className="space-y-6">
       <div>
         <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-text-2">
-          <Sparkles size={13} className="text-accent" /> Powered by CostPilot AI
+          <Sparkles size={13} className="text-accent" /> Powered by Mzansi Ledger AI
         </div>
         <h1 className="mt-3 text-2xl font-bold tracking-tight text-white">AI Copilot</h1>
         <p className="mt-1 text-sm text-text-2">Your intelligent financial assistant — ask anything about your business finances.</p>
