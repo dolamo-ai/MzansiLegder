@@ -109,7 +109,7 @@ export function InvoicesPage() {
   );
 }
 
-function NewInvoiceModal({ open, onClose, onSave }: { open: boolean; onClose: () => void; onSave: (inv: Omit<Invoice, 'id'>) => Promise<void> }) {
+function NewInvoiceModal({ open, onClose, onSave }: { open: boolean; onClose: () => void; onSave: (inv: Omit<Invoice, 'id' | 'user_id'>) => Promise<void> }) {
   const [vendor, setVendor] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));

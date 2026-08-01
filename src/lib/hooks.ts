@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/auth';
 import type { Transaction, TxCategory, TxStatus, Invoice, Goal } from '@/lib/types';
 
 export function useTransactions() {
+  const { user } = useAuth();
   const [rows, setRows] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,14 +28,14 @@ export function useTransactions() {
     fetchAll();
   }, [fetchAll]);
 
-  const insert = useCallback(async (tx: Omit<Transaction, 'id'> & { id?: string }) => {
+  const insert = useCallback(async (tx: Omit<Transaction, 'id' | 'user_id'> & { id?: string }) => {
     const id = tx.id ?? `TX-${Math.floor(10000 + Math.random() * 90000)}`;
-    const payload = { ...tx, id };
+    const payload = { ...tx, id, user_id: user!.id };
     const { data, error } = await supabase.from('transactions').insert(payload).select().single();
     if (error) throw new Error(error.message);
     if (data) setRows((prev) => [data as Transaction, ...prev]);
     return data as Transaction;
-  }, []);
+  }, [user]);
 
   const update = useCallback(async (id: string, patch: Partial<Transaction>) => {
     const { data, error } = await supabase.from('transactions').update(patch).eq('id', id).select().single();
@@ -52,6 +54,7 @@ export function useTransactions() {
 }
 
 export function useInvoices() {
+  const { user } = useAuth();
   const [rows, setRows] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,14 +70,14 @@ export function useInvoices() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  const insert = useCallback(async (inv: Omit<Invoice, 'id'> & { id?: string }) => {
+  const insert = useCallback(async (inv: Omit<Invoice, 'id' | 'user_id'> & { id?: string }) => {
     const id = inv.id ?? `INV-${Math.floor(10000 + Math.random() * 90000)}`;
-    const payload = { ...inv, id };
+    const payload = { ...inv, id, user_id: user!.id };
     const { data, error } = await supabase.from('invoices').insert(payload).select().single();
     if (error) throw new Error(error.message);
     if (data) setRows((prev) => [data as Invoice, ...prev]);
     return data as Invoice;
-  }, []);
+  }, [user]);
 
   const update = useCallback(async (id: string, patch: Partial<Invoice>) => {
     const { data, error } = await supabase.from('invoices').update(patch).eq('id', id).select().single();
@@ -93,6 +96,7 @@ export function useInvoices() {
 }
 
 export function useGoals() {
+  const { user } = useAuth();
   const [rows, setRows] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,14 +112,14 @@ export function useGoals() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  const insert = useCallback(async (goal: Omit<Goal, 'id'> & { id?: string }) => {
+  const insert = useCallback(async (goal: Omit<Goal, 'id' | 'user_id'> & { id?: string }) => {
     const id = goal.id ?? `G-${Math.floor(1000 + Math.random() * 9000)}`;
-    const payload = { ...goal, id };
+    const payload = { ...goal, id, user_id: user!.id };
     const { data, error } = await supabase.from('goals').insert(payload).select().single();
     if (error) throw new Error(error.message);
     if (data) setRows((prev) => [data as Goal, ...prev]);
     return data as Goal;
-  }, []);
+  }, [user]);
 
   const update = useCallback(async (id: string, patch: Partial<Goal>) => {
     const { data, error } = await supabase.from('goals').update(patch).eq('id', id).select().single();

@@ -117,7 +117,7 @@ function GoalCard({ goal, delay, onEdit, onDelete }: { goal: Goal; delay: number
   );
 }
 
-function CreateGoalModal({ open, onClose, onSave }: { open: boolean; onClose: () => void; onSave: (g: Omit<Goal, 'id'>) => Promise<void> }) {
+function CreateGoalModal({ open, onClose, onSave }: { open: boolean; onClose: () => void; onSave: (g: Omit<Goal, 'id' | 'user_id'>) => Promise<void> }) {
   const [name, setName] = useState('');
   const [target, setTarget] = useState('');
   const [current, setCurrent] = useState('');

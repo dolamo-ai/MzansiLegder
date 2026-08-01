@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 interface NewTransactionModalProps {
   open: boolean;
   onClose: () => void;
-  onSave: (tx: Omit<Transaction, 'id'>) => Promise<void>;
+  onSave: (tx: Omit<Transaction, 'id' | 'user_id'>) => Promise<void>;
 }
 
 const categories: TxCategory[] = ['Software', 'Marketing', 'Office', 'Travel', 'Utilities', 'Payroll', 'Legal', 'Hardware'];

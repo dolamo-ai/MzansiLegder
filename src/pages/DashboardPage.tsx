@@ -39,7 +39,7 @@ export function DashboardPage() {
     return sorted.map(([, v]) => v);
   }, [rows]);
 
-  const handleNewTx = async (tx: Omit<typeof rows[number], 'id'>) => {
+  const handleNewTx = async (tx: Omit<typeof rows[number], 'id' | 'user_id'>) => {
     await insert(tx);
   };
 

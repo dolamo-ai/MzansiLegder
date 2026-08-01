@@ -15,6 +15,7 @@ export type TxSource = 'receipt' | 'invoice' | 'csv' | 'manual';
 
 export interface Transaction {
   id: string;
+  user_id: string;
   vendor: string;
   date: string;
   amount: number;
@@ -29,6 +30,7 @@ export interface Transaction {
 
 export interface Invoice {
   id: string;
+  user_id: string;
   vendor: string;
   date: string;
   amount: number;
@@ -38,6 +40,7 @@ export interface Invoice {
 
 export interface Goal {
   id: string;
+  user_id: string;
   name: string;
   target: number;
   current: number;
